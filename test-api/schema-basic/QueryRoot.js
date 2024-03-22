@@ -13,10 +13,10 @@ import User from './User'
 import Sponsor from './Sponsor'
 import { fromBase64, q } from '../shared'
 
-import mysqlModule from '../../src/stringifiers/dialects/mysql'
-import oracleModule from '../../src/stringifiers/dialects/oracle'
-import pgModule from '../../src/stringifiers/dialects/pg'
-import sqlite3Module from '../../src/stringifiers/dialects/sqlite3'
+import { dialect as mysqlModule } from '../../src/stringifiers/dialects/mysql'
+import { dialect as oracleModule } from '../../src/stringifiers/dialects/oracle'
+import { dialect as pgModule } from '../../src/stringifiers/dialects/pg'
+import { dialect as sqlite3Module } from '../../src/stringifiers/dialects/sqlite3'
 
 import joinMonster from '../../src/index'
 

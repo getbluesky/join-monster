@@ -1,16 +1,23 @@
-function quote(str) {
-  return `\`${str}\``
+import { PaginationNotSupported } from './mixins/pagination-not-supported'
+
+class Dialect extends PaginationNotSupported(function () { }) {
+  // eslint-disable-next-line class-methods-use-this
+  get name() {
+    return 'mysql'
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  quote(str) {
+    return `\`${str}\``
+  }
+
+  compositeKey(parent, keys) {
+    keys = keys.map(key => `${this.quote(parent)}.${this.quote(key)}`)
+    return `CONCAT(${keys.join(', ')})`
+  }
 }
 
 module.exports = {
-  ...require('./mixins/pagination-not-supported'),
-
-  name: 'mysql',
-
-  quote,
-
-  compositeKey(parent, keys) {
-    keys = keys.map(key => `${quote(parent)}.${quote(key)}`)
-    return `CONCAT(${keys.join(', ')})`
-  }
+  dialect: new Dialect(),
+  Dialect,
 }
