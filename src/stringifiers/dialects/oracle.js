@@ -4,9 +4,10 @@ import {
   interpretForOffsetPaging,
   orderingsToString
 } from '../shared'
+import { UnlimitedLimitIsMaxint } from './mixins/unlimitedLimit-is-maxint'
 import { Dialect as PostgresDialect } from './pg'
 
-class Dialect extends PostgresDialect {
+class Dialect extends UnlimitedLimitIsMaxint(PostgresDialect) {
   // eslint-disable-next-line class-methods-use-this
   get name() { return 'oracle' }
 
