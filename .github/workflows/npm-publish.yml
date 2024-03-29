@@ -2,7 +2,8 @@ name: NPM Publish
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   publish:
@@ -27,7 +28,8 @@ jobs:
         id: publish
         uses: JS-DevTools/npm-publish@v1
         with:
-          token: ${{ secrets.NPM_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          registry: "https://npm.pkg.github.com"
 
       - name: Version Updated
         if: steps.publish.outputs.type != 'none'
