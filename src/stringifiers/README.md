@@ -13,6 +13,7 @@ Each dialect must implement certain cases (functions) to plug into the dispatche
 1. handleJoinedManyToManyPaginated
 1. handleBatchedManyToManyPaginated
 1. handleBatchedOneToManyPaginated
+1. unlimitedLimit (optional)
 
 Implementing a new dialect should just mean creating a new object with those methods in a file inside `dialects`.
 

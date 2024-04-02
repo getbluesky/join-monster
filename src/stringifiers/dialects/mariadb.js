@@ -7,8 +7,9 @@ import {
   orderingsToString
 } from '../shared'
 import { PaginationNotSupported } from './mixins/pagination-not-supported'
+import { UnlimitedLimitIsMaxint } from './mixins/unlimitedLimit-is-maxint'
 
-class Dialect extends PaginationNotSupported(function () { }) {
+class Dialect extends UnlimitedLimitIsMaxint(PaginationNotSupported(function () { })) {
   // eslint-disable-next-line class-methods-use-this
   get name() { return 'mariadb' }
 
