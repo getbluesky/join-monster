@@ -1,16 +1,13 @@
-function quote(str) {
-  return `\`${str}\``
+import { Dialect as MariaDB } from './mariadb'
+
+class Dialect extends MariaDB {
+  // eslint-disable-next-line class-methods-use-this
+  get name() {
+    return 'mysql8'
+  }
 }
 
 module.exports = {
-  ...require('./mariadb'),
-
-  name: 'mysql8',
-
-  quote,
-
-  compositeKey(parent, keys) {
-    keys = keys.map(key => `${quote(parent)}.${quote(key)}`)
-    return `CONCAT(${keys.join(', ')})`
-  }
+  dialect: new Dialect(),
+  Dialect,
 }

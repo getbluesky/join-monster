@@ -1,109 +1,106 @@
+import { filter } from 'lodash'
 import {
-  interpretForOffsetPaging,
   interpretForKeysetPaging,
+  interpretForOffsetPaging,
   orderingsToString
 } from '../shared'
-import { filter } from 'lodash'
+import { Dialect as PostgresDialect } from './pg'
 
-function recursiveConcat(keys) {
-  if (keys.length <= 1) {
-    return keys[0]
-  }
-  return recursiveConcat([`CONCAT(${keys[0]}, ${keys[1]})`, ...keys.slice(2)])
-}
+class Dialect extends PostgresDialect {
+  // eslint-disable-next-line class-methods-use-this
+  get name() { return 'oracle' }
 
-const q = str => `"${str}"`
-
-function keysetPagingSelect(
-  table,
-  whereCondition,
-  order,
-  limit,
-  as,
-  options = {}
-) {
-  let { joinCondition, joinType, extraJoin } = options
-  whereCondition = filter(whereCondition).join(' AND ') || '1 = 1'
-  if (joinCondition) {
-    return `\
+  keysetPagingSelect(
+    table,
+    whereCondition,
+    order,
+    limit,
+    as,
+    options = {}
+  ) {
+    let { joinCondition, joinType, extraJoin } = options
+    whereCondition = filter(whereCondition).join(' AND ') || '1 = 1'
+    if (joinCondition) {
+      return `\
 ${joinType === 'LEFT' ? 'OUTER' : 'CROSS'} APPLY (
   SELECT "${as}".*
   FROM ${table} "${as}"
-  ${
-    extraJoin
-      ? `LEFT JOIN ${extraJoin.name} ${q(extraJoin.as)}
+  ${extraJoin
+          ? `LEFT JOIN ${extraJoin.name} ${this.quote(extraJoin.as)}
     ON ${extraJoin.condition}`
-      : ''
-  }
+        : ''
+        }
   WHERE ${whereCondition}
-  ORDER BY ${orderingsToString(order.columns, q, order.table)}
+  ORDER BY ${orderingsToString(order.columns, this.quote, order.table)}
   FETCH FIRST ${limit} ROWS ONLY
-) ${q(as)}`
-  }
-  return `\
+) ${this.quote(as)}`
+    }
+    return `\
 FROM (
   SELECT "${as}".*
   FROM ${table} "${as}"
   WHERE ${whereCondition}
-  ORDER BY ${orderingsToString(order.columns, q, order.table)}
+  ORDER BY ${orderingsToString(order.columns, this.quote, order.table)}
   FETCH FIRST ${limit} ROWS ONLY
-) ${q(as)}`
-}
+) ${this.quote(as)}`
+  }
 
-function offsetPagingSelect(
-  table,
-  pagingWhereConditions,
-  order,
-  limit,
-  offset,
-  as,
-  options = {}
-) {
-  let { joinCondition, joinType, extraJoin } = options
-  const whereCondition = filter(pagingWhereConditions).join(' AND ') || '1 = 1'
-  if (joinCondition) {
-    return `\
+  offsetPagingSelect(
+    table,
+    pagingWhereConditions,
+    order,
+    limit,
+    offset,
+    as,
+    options = {}
+  ) {
+    let { joinCondition, joinType, extraJoin } = options
+    const whereCondition = filter(pagingWhereConditions).join(' AND ') || '1 = 1'
+    if (joinCondition) {
+      return `\
 ${joinType === 'LEFT' ? 'OUTER' : 'CROSS'} APPLY (
-  SELECT "${as}".*, count(*) OVER () AS ${q('$total')}
+  SELECT "${as}".*, count(*) OVER () AS ${this.quote('$total')}
   FROM ${table} "${as}"
-  ${
-    extraJoin
-      ? `LEFT JOIN ${extraJoin.name} ${q(extraJoin.as)}
+  ${extraJoin
+          ? `LEFT JOIN ${extraJoin.name} ${this.quote(extraJoin.as)}
     ON ${extraJoin.condition}`
-      : ''
-  }
+        : ''
+        }
   WHERE ${whereCondition}
-  ORDER BY ${orderingsToString(order.columns, q, order.table)}
+  ORDER BY ${orderingsToString(order.columns, this.quote, order.table)}
   OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY
-) ${q(as)}`
-  }
-  return `\
+) ${this.quote(as)}`
+    }
+    return `\
 FROM (
-  SELECT "${as}".*, count(*) OVER () AS ${q('$total')}
+  SELECT "${as}".*, count(*) OVER () AS ${this.quote('$total')}
   FROM ${table} "${as}"
   WHERE ${whereCondition}
-  ORDER BY ${orderingsToString(order.columns, q, order.table)}
+  ORDER BY ${orderingsToString(order.columns, this.quote, order.table)}
   OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY
-) ${q(as)}`
-}
+) ${this.quote(as)}`
+  }
 
-const dialect = (module.exports = {
-  ...require('./pg'),
-  name: 'oracle',
+  recursiveConcat(keys) {
+    if (keys.length <= 1) {
+      return keys[0]
+    }
+    return this.recursiveConcat([`CONCAT(${keys[0]}, ${keys[1]})`, ...keys.slice(2)])
+  }
 
   compositeKey(parent, keys) {
-    keys = keys.map(key => `"${parent}"."${key}"`)
-    return `NULLIF(${recursiveConcat(keys)}, '')`
-  },
+    keys = keys.map(key => `${this.quote(parent)}.${this.quote(key)}`)
+    return `NULLIF(${this.recursiveConcat(keys)}, '')`
+  }
 
-  handlePaginationAtRoot: async function(parent, node, context, tables) {
+  async handlePaginationAtRoot(parent, node, context, tables) {
     const pagingWhereConditions = []
     if (node.sortKey) {
       const {
         limit,
         order,
         whereCondition: whereAddendum
-      } = interpretForKeysetPaging(node, dialect)
+      } = interpretForKeysetPaging(node, this)
       pagingWhereConditions.push(whereAddendum)
       if (node.where) {
         pagingWhereConditions.push(
@@ -111,7 +108,7 @@ const dialect = (module.exports = {
         )
       }
       tables.push(
-        keysetPagingSelect(
+        this.keysetPagingSelect(
           node.name,
           pagingWhereConditions,
           order,
@@ -120,14 +117,14 @@ const dialect = (module.exports = {
         )
       )
     } else if (node.orderBy) {
-      const { limit, offset, order } = interpretForOffsetPaging(node, dialect)
+      const { limit, offset, order } = interpretForOffsetPaging(node, this)
       if (node.where) {
         pagingWhereConditions.push(
           await node.where(`"${node.as}"`, node.args || {}, context, node)
         )
       }
       tables.push(
-        offsetPagingSelect(
+        this.offsetPagingSelect(
           node.name,
           pagingWhereConditions,
           order,
@@ -137,9 +134,9 @@ const dialect = (module.exports = {
         )
       )
     }
-  },
+  }
 
-  handleJoinedOneToManyPaginated: async function(
+  async handleJoinedOneToManyPaginated(
     parent,
     node,
     context,
@@ -149,7 +146,7 @@ const dialect = (module.exports = {
     const pagingWhereConditions = [
       await node.sqlJoin(
         `"${parent.as}"`,
-        q(node.as),
+        this.quote(node.as),
         node.args || {},
         context,
         node
@@ -167,10 +164,10 @@ const dialect = (module.exports = {
         limit,
         order,
         whereCondition: whereAddendum
-      } = interpretForKeysetPaging(node, dialect)
+      } = interpretForKeysetPaging(node, this)
       pagingWhereConditions.push(whereAddendum)
       tables.push(
-        keysetPagingSelect(
+        this.keysetPagingSelect(
           node.name,
           pagingWhereConditions,
           order,
@@ -183,9 +180,9 @@ const dialect = (module.exports = {
         )
       )
     } else if (node.orderBy) {
-      const { limit, offset, order } = interpretForOffsetPaging(node, dialect)
+      const { limit, offset, order } = interpretForOffsetPaging(node, this)
       tables.push(
-        offsetPagingSelect(
+        this.offsetPagingSelect(
           node.name,
           pagingWhereConditions,
           order,
@@ -199,9 +196,9 @@ const dialect = (module.exports = {
         )
       )
     }
-  },
+  }
 
-  handleJoinedManyToManyPaginated: async function(
+  async handleJoinedManyToManyPaginated(
     parent,
     node,
     context,
@@ -250,10 +247,10 @@ const dialect = (module.exports = {
         limit,
         order,
         whereCondition: whereAddendum
-      } = interpretForKeysetPaging(node, dialect)
+      } = interpretForKeysetPaging(node, this)
       pagingWhereConditions.push(whereAddendum)
       tables.push(
-        keysetPagingSelect(
+        this.keysetPagingSelect(
           node.junction.sqlTable,
           pagingWhereConditions,
           order,
@@ -263,9 +260,9 @@ const dialect = (module.exports = {
         )
       )
     } else if (node.orderBy || node.junction.orderBy) {
-      const { limit, offset, order } = interpretForOffsetPaging(node, dialect)
+      const { limit, offset, order } = interpretForOffsetPaging(node, this)
       tables.push(
-        offsetPagingSelect(
+        this.offsetPagingSelect(
           node.junction.sqlTable,
           pagingWhereConditions,
           order,
@@ -276,9 +273,9 @@ const dialect = (module.exports = {
         )
       )
     }
-  },
+  }
 
-  handleBatchedOneToManyPaginated: async function(
+  async handleBatchedOneToManyPaginated(
     parent,
     node,
     context,
@@ -293,17 +290,17 @@ const dialect = (module.exports = {
         await node.where(`"${node.as}"`, node.args || {}, context, node)
       )
     }
-    tables.push(`FROM (${arrToTableUnion(batchScope)}) "temp"`)
+    tables.push(`FROM (${this.arrToTableUnion(batchScope)}) "temp"`)
     const lateralJoinCondition = `"${node.as}"."${node.sqlBatch.thisKey.name}" = "temp"."value"`
     if (node.sortKey) {
       const {
         limit,
         order,
         whereCondition: whereAddendum
-      } = interpretForKeysetPaging(node, dialect)
+      } = interpretForKeysetPaging(node, this)
       pagingWhereConditions.push(whereAddendum)
       tables.push(
-        keysetPagingSelect(
+        this.keysetPagingSelect(
           node.name,
           pagingWhereConditions,
           order,
@@ -313,9 +310,9 @@ const dialect = (module.exports = {
         )
       )
     } else if (node.orderBy) {
-      const { limit, offset, order } = interpretForOffsetPaging(node, dialect)
+      const { limit, offset, order } = interpretForOffsetPaging(node, this)
       tables.push(
-        offsetPagingSelect(
+        this.offsetPagingSelect(
           node.name,
           pagingWhereConditions,
           order,
@@ -328,9 +325,9 @@ const dialect = (module.exports = {
         )
       )
     }
-  },
+  }
 
-  handleBatchedManyToManyPaginated: async function(
+  async handleBatchedManyToManyPaginated(
     parent,
     node,
     context,
@@ -357,7 +354,7 @@ const dialect = (module.exports = {
       )
     }
 
-    tables.push(`FROM (${arrToTableUnion(batchScope)}) "temp"`)
+    tables.push(`FROM (${this.arrToTableUnion(batchScope)}) "temp"`)
     const lateralJoinCondition = `"${node.junction.as}"."${node.junction.sqlBatch.thisKey.name}" = "temp"."value"`
 
     const lateralJoinOptions = {
@@ -376,10 +373,10 @@ const dialect = (module.exports = {
         limit,
         order,
         whereCondition: whereAddendum
-      } = interpretForKeysetPaging(node, dialect)
+      } = interpretForKeysetPaging(node, this)
       pagingWhereConditions.push(whereAddendum)
       tables.push(
-        keysetPagingSelect(
+        this.keysetPagingSelect(
           node.junction.sqlTable,
           pagingWhereConditions,
           order,
@@ -389,9 +386,9 @@ const dialect = (module.exports = {
         )
       )
     } else if (node.orderBy || node.junction.orderBy) {
-      const { limit, offset, order } = interpretForOffsetPaging(node, dialect)
+      const { limit, offset, order } = interpretForOffsetPaging(node, this)
       tables.push(
-        offsetPagingSelect(
+        this.offsetPagingSelect(
           node.junction.sqlTable,
           pagingWhereConditions,
           order,
@@ -404,14 +401,20 @@ const dialect = (module.exports = {
     }
     tables.push(`LEFT JOIN ${node.name} "${node.as}" ON ${joinCondition}`)
   }
-})
 
-function arrToTableUnion(arr) {
-  return arr
-    .map(
-      val => `
-  SELECT ${val} AS "value" FROM DUAL
-`
-    )
-    .join(' UNION ')
+  // eslint-disable-next-line class-methods-use-this
+  arrToTableUnion(arr) {
+    return arr
+      .map(
+        val => `
+    SELECT ${val} AS "value" FROM DUAL
+  `
+      )
+      .join(' UNION ')
+  }
+}
+
+module.exports = {
+  dialect: new Dialect(),
+  Dialect,
 }
