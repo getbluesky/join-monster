@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -20,6 +23,11 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: "${{ steps.nvm.outputs.NVMRC }}"
+
+      - name: Set pre-release version in package.json to include epoch time
+        run: |
+          npm version prerelease --no-git-tag-version --ignore-scripts --preid=prerelease.$(date +%s)
+          echo "Version updated to $(node -p "require('./package.json').version")"
 
       - name: Install Node Deps
         run: npm ci
