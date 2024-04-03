@@ -177,9 +177,7 @@ export function interpretForOffsetPaging(node, dialect) {
     order.columns = node.junction.orderBy
   }
 
-  let limit = ['mariadb', 'mysql', 'oracle'].includes(name)
-    ? '18446744073709551615'
-    : 'ALL'
+  let limit = dialect.unlimitedLimit ? dialect.unlimitedLimit() : 'ALL'
   if (idx(node, _ => _.defaultPageSize)) {
     limit = node.defaultPageSize + 1
   }
