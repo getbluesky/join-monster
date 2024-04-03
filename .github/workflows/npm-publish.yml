@@ -32,6 +32,9 @@ jobs:
       - name: Install Node Deps
         run: npm ci
 
+      - name: Build the project
+        run: npm run build
+
       - name: "Publish if Changed"
         id: publish
         uses: JS-DevTools/npm-publish@v3
