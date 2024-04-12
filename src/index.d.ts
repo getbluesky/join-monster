@@ -134,8 +134,79 @@ declare module 'graphql' {
 
 // JoinMonster lib interface
 
-interface DialectModule {
-  name: string
+export interface DialectModule {
+  get name(): string
+  quote(str: string): string
+  compositeKey(parent: any, keys: string): string
+  handlePaginationAtRoot(parent: any, node: any, context: any, tables: any): void
+  handleJoinedOneToManyPaginated(parent: any, node: any, context: any, tables: any, joinCondition: any): void
+  handleJoinedManyToManyPaginated(parent: any, node: any, context: any, tables: any, joinCondition1: any, joinCondition2: any): void
+  handleBatchedManyToManyPaginated(parent: any, node: any, context: any, tables: any, batchScope: any, joinCondition: any): void
+  handleBatchedOneToManyPaginated(parent: any, node: any, context: any, tables: any, batchScope: any): void
+  unlimitedLimit?(): string
+}
+
+export declare class MariadbDialect extends DialectModule {
+  get name(): string
+  quote(str: string): string
+  compositeKey(parent: any, keys: string): string
+  handlePaginationAtRoot(parent: any, node: any, context: any, tables: any): void
+  handleJoinedOneToManyPaginated(parent: any, node: any, context: any, tables: any, joinCondition: any): void
+  handleJoinedManyToManyPaginated(parent: any, node: any, context: any, tables: any, joinCondition1: any, joinCondition2: any): void
+  handleBatchedManyToManyPaginated(parent: any, node: any, context: any, tables: any, batchScope: any, joinCondition: any): void
+  handleBatchedOneToManyPaginated(parent: any, node: any, context: any, tables: any, batchScope: any): void
+}
+
+export declare class MysqlDialect extends DialectModule {
+  get name(): string
+  quote(str: string): string
+  compositeKey(parent: any, keys: string): string
+  handlePaginationAtRoot(parent: any, node: any, context: any, tables: any): void
+  handleJoinedOneToManyPaginated(parent: any, node: any, context: any, tables: any, joinCondition: any): void
+  handleJoinedManyToManyPaginated(parent: any, node: any, context: any, tables: any, joinCondition1: any, joinCondition2: any): void
+  handleBatchedManyToManyPaginated(parent: any, node: any, context: any, tables: any, batchScope: any, joinCondition: any): void
+  handleBatchedOneToManyPaginated(parent: any, node: any, context: any, tables: any, batchScope: any): void
+}
+export declare class Mysql8Dialect extends DialectModule {
+  get name(): string
+  quote(str: string): string
+  compositeKey(parent: any, keys: string): string
+  handlePaginationAtRoot(parent: any, node: any, context: any, tables: any): void
+  handleJoinedOneToManyPaginated(parent: any, node: any, context: any, tables: any, joinCondition: any): void
+  handleJoinedManyToManyPaginated(parent: any, node: any, context: any, tables: any, joinCondition1: any, joinCondition2: any): void
+  handleBatchedManyToManyPaginated(parent: any, node: any, context: any, tables: any, batchScope: any, joinCondition: any): void
+  handleBatchedOneToManyPaginated(parent: any, node: any, context: any, tables: any, batchScope: any): void
+}
+export declare class OracleDialect extends DialectModule {
+  get name(): string
+  quote(str: string): string
+  compositeKey(parent: any, keys: string): string
+  handlePaginationAtRoot(parent: any, node: any, context: any, tables: any): void
+  handleJoinedOneToManyPaginated(parent: any, node: any, context: any, tables: any, joinCondition: any): void
+  handleJoinedManyToManyPaginated(parent: any, node: any, context: any, tables: any, joinCondition1: any, joinCondition2: any): void
+  handleBatchedManyToManyPaginated(parent: any, node: any, context: any, tables: any, batchScope: any, joinCondition: any): void
+  handleBatchedOneToManyPaginated(parent: any, node: any, context: any, tables: any, batchScope: any): void
+
+}
+export declare class PgDialect extends DialectModule {
+  get name(): string
+  quote(str: string): string
+  compositeKey(parent: any, keys: string): string
+  handlePaginationAtRoot(parent: any, node: any, context: any, tables: any): void
+  handleJoinedOneToManyPaginated(parent: any, node: any, context: any, tables: any, joinCondition: any): void
+  handleJoinedManyToManyPaginated(parent: any, node: any, context: any, tables: any, joinCondition1: any, joinCondition2: any): void
+  handleBatchedManyToManyPaginated(parent: any, node: any, context: any, tables: any, batchScope: any, joinCondition: any): void
+  handleBatchedOneToManyPaginated(parent: any, node: any, context: any, tables: any, batchScope: any): void
+}
+export declare class Sqlite3Dialect extends DialectModule {
+  get name(): string
+  quote(str: string): string
+  compositeKey(parent: any, keys: string): string
+  handlePaginationAtRoot(parent: any, node: any, context: any, tables: any): void
+  handleJoinedOneToManyPaginated(parent: any, node: any, context: any, tables: any, joinCondition: any): void
+  handleJoinedManyToManyPaginated(parent: any, node: any, context: any, tables: any, joinCondition1: any, joinCondition2: any): void
+  handleBatchedManyToManyPaginated(parent: any, node: any, context: any, tables: any, batchScope: any, joinCondition: any): void
+  handleBatchedOneToManyPaginated(parent: any, node: any, context: any, tables: any, batchScope: any): void
 }
 
 type Dialect = 'pg' | 'oracle' | 'mariadb' | 'mysql' | 'mysql8' | 'sqlite3'

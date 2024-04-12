@@ -193,3 +193,10 @@ joinMonster.getNode = getNode
 // expose the package version for debugging
 joinMonster.version = require('../package.json').version
 export default joinMonster
+
+export { Dialect as MariadbDialect } from './stringifiers/dialects/mariadb'
+export { Dialect as MysqlDialect } from './stringifiers/dialects/mysql'
+export { Dialect as Mysql8Dialect } from './stringifiers/dialects/mysql8'
+export { Dialect as OracleDialect } from './stringifiers/dialects/oracle'
+export { Dialect as PgDialect } from './stringifiers/dialects/pg'
+export { Dialect as Sqlite3Dialect } from './stringifiers/dialects/sqlite3'
